@@ -5,12 +5,19 @@ import { clerkClient, clerkPlugin, getAuth } from "@clerk/fastify";
 import admin from "./routes/admin";
 import user from "./routes/user";
 import endorsements from "./routes/endorsements";
+import fastifyPg from "@fastify/postgres";
+import cors from "@fastify/cors";
 
 import { initDB } from "./db";
 
 const fastify = Fastify({ logger: true });
 
 const PORT: number = parseInt(process.env.PORT as string) || 3000;
+const DATABASE_URL = process.env.DATABASE_URL as string;
+
+fastify.register(fastifyPg, {
+  connectionString: DATABASE_URL,
+});
 
 /**
  * Register Clerk only for a subset of your routes
@@ -42,6 +49,10 @@ fastify.register(publicRoutes);
 const start = async () => {
   try {
     await initDB();
+    await fastify.register(cors, {
+      // put your options here
+      origin: "*",
+    });
     await fastify.listen({ port: PORT });
     console.log(`Server listening on port ${PORT}`);
   } catch (err) {

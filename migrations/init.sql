@@ -23,6 +23,7 @@ CREATE TABLE endorsements(
     created_at    TIMESTAMPTZ DEFAULT now() NOT NULL,
     updated_at    TIMESTAMPTZ DEFAULT now() NOT NULL,
     deleted_at    TIMESTAMPTZ,
+    approved_at   TIMESTAMPTZ,
     message text NOT NULL,
     user_name text NOT NULL,
     user_id       UUID        NOT NULL,
@@ -36,8 +37,8 @@ CREATE TABLE endorsements(
 create unique index user_emails on users (email);
 create unique index user_handles on users (handle);
 create unique index user_external_ids on users (external_id);
-create unique index endorsement_user_id_endorser_id on endorsements (user_id, endorser_id);
-create index endorsement_user_id on endorsements(user_id);
+create unique index endorsement_user_id_endorser_id on endorsements (user_id, endorser_id, approved_at);
+create index endorsement_approved_user_id on endorsements(user_id, approved_at);
 create index endorsement_endorser_id on endorsements(endorser_id);
 
 end;

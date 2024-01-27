@@ -11,7 +11,7 @@ const registerRoutes = (instance: FastifyInstance) => {
 
       api.patch("/info", async (request, reply) => {
         const user = requireUser(request, reply);
-        const { handle } = request.params;
+        const { handle, name } = request.params as any;
 
         await fastify.pg.query("SELECT * FROM endorsements WHERE handle = $1", [handle]);
 
