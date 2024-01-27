@@ -1,0 +1,34 @@
+{
+  "name": "vouched-fastify",
+  "description": "Fastify server with Clerk authentication for the vouched app",
+  "private": true,
+  "keywords": [
+    "clerk",
+    "nextjs",
+    "fastify",
+    "authentication"
+  ],
+  "scripts": {
+    "start": "npx ts-node src/index.ts",
+    "dev": "npx nodemon src/index.ts"
+  },
+  "dependencies": {
+    "@clerk/fastify": "latest",
+    "@getbrevo/brevo": "^2.0.0-beta.4",
+    "dotenv": "^16.0.3",
+    "fastify": "4.12.0",
+    "pg": "^8.11.3",
+    "postgrator": "^7.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "author": "Chris Buonocore",
+  "devDependencies": {
+    "@types/dotenv": "^8.2.0",
+    "nodemon": "^2.0.20",
+    "prettier": "^2.8.4",
+    "ts-node": "^10.9.1"
+  }
+}
