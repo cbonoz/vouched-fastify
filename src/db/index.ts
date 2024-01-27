@@ -1,13 +1,13 @@
 import Postgrator from "postgrator";
 import path from "path";
+import pg from "pg";
 
 export const initDB = async () => {
   const client = new pg.Client({
-    host: "localhost",
-    port: 5432,
-    database: "example",
-    user: "example",
-    password: "example",
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false,
+    },
   });
 
   try {

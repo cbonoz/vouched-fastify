@@ -9,6 +9,17 @@ const registerRoutes = (instance: FastifyInstance) => {
         return requireUser(request, reply);
       });
 
+      api.patch("/info", async (request, reply) => {
+        const user = requireUser(request, reply);
+        const { handle } = request.params;
+
+        await fastify.pg.query("SELECT * FROM endorsements WHERE handle = $1", [handle]);
+
+        return {
+          message: "This is a public endpoint. Request /protected to test the Clerk auth middleware",
+        };
+      });
+
       done();
     },
     {
