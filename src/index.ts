@@ -8,7 +8,7 @@ import endorsements from "./routes/endorsements";
 import fastifyPg from "@fastify/postgres";
 import cors from "@fastify/cors";
 
-import { initDB } from "./db";
+import { initDB } from "./db/migrate";
 
 const fastify = Fastify({ logger: true });
 
@@ -54,7 +54,7 @@ const start = async () => {
       origin: "*",
     });
     await fastify.listen({ port: PORT });
-    console.log(`Server listening on port ${PORT}`);
+    // console.log(`Server listening on port ${PORT}`);
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

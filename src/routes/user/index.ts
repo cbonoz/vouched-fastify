@@ -1,6 +1,7 @@
 import fastify, { FastifyInstance } from "fastify";
 import { requireUser } from "../../middleware";
 import { getAuth } from "@clerk/fastify";
+import { fastifyPg } from "../../db";
 
 const registerRoutes = (instance: FastifyInstance) => {
   instance.register(
@@ -13,7 +14,7 @@ const registerRoutes = (instance: FastifyInstance) => {
         const user = requireUser(request, reply);
         const { handle, name } = request.params as any;
 
-        await fastify.pg.query("SELECT * FROM endorsements WHERE handle = $1", [handle]);
+        await fastifyPg.query("SELECT * FROM endorsements WHERE handle = $1", [handle]);
 
         return {
           message: "This is a public endpoint. Request /protected to test the Clerk auth middleware",

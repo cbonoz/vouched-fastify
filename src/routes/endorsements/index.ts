@@ -1,6 +1,7 @@
 import fastify, { FastifyInstance } from "fastify";
 import { requireUser } from "../../middleware";
 import { Endorsement } from "../../types";
+import { fastifyPg } from "../../db";
 
 const registerRoutes = (instance: FastifyInstance) => {
   instance.register(
@@ -13,7 +14,7 @@ const registerRoutes = (instance: FastifyInstance) => {
         const { offset, limit } = request.query as { offset: number; limit: number };
 
         // query with offset and limit
-        const results = await fastify.pg.query("SELECT * FROM endorsements WHERE handle = $1 LIMIT $2 OFFSET $3", [
+        const results = await fastifyPg.query("SELECT * FROM endorsements WHERE handle = $1 LIMIT $2 OFFSET $3", [
           handle,
           limit,
           offset,
@@ -31,7 +32,7 @@ const registerRoutes = (instance: FastifyInstance) => {
         const userId = user.id;
 
         // delete
-        await fastify.pg.query("DELETE FROM endorsements WHERE id = $1 and createdBy = $2", [endorsementId, userId]);
+        await fastifyPg.query("DELETE FROM endorsements WHERE id = $1 and createdBy = $2", [endorsementId, userId]);
 
         return {
           message: "Endorsement deleted",
@@ -45,7 +46,7 @@ const registerRoutes = (instance: FastifyInstance) => {
         const userId = user.id;
 
         // update
-        await fastify.pg.query("UPDATE endorsements SET approvedAt = $1 WHERE id = $2", [userId, endorsementId]);
+        await fastifyPg.query("UPDATE endorsements SET approvedAt = $1 WHERE id = $2", [userId, endorsementId]);
 
         return {
           message: "Endorsement approved",
@@ -57,9 +58,9 @@ const registerRoutes = (instance: FastifyInstance) => {
         const user = requireUser(request, reply);
         const { handle } = request.params as any;
 
-        // await fastify.pg.query("SELECT * FROM endorsements WHERE handle = $1", [handle]);
+        // await fastifyPg.query("SELECT * FROM endorsements WHERE handle = $1", [handle]);
         // insert
-        await fastify.pg.query(
+        await fastifyPg.query(
           "INSERT INTO endorsements (handle, createdBy, name, email, message) VALUES ($1, $2, $3, $4)",
           [endorsement.handle, endorsement.name, endorsement.email, endorsement.message]
         );

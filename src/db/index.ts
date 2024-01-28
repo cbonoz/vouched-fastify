@@ -1,38 +1,4 @@
-import Postgrator from "postgrator";
-import path from "path";
-import pg from "pg";
+import fastify from "fastify";
+import { PostgresDb } from "@fastify/postgres";
 
-export const initDB = async () => {
-  const client = new pg.Client({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false,
-    },
-  });
-
-  try {
-    const postgrator = new Postgrator({
-      migrationPattern: path.join(__dirname, "/migrations/*"),
-      driver: "pg",
-      database: "vouched",
-      schemaTable: "migrations",
-      currentSchema: "public", // Postgres and MS SQL Server only
-      execQuery: (query) => client.query(query),
-    });
-
-    const result = await postgrator.migrate();
-
-    if (result.length === 0) {
-      console.log('No migrations run for schema "public". Already at the latest one.');
-    }
-
-    console.log("Migration done.");
-
-    process.exitCode = 0;
-  } catch (err) {
-    console.error(err);
-    process.exitCode = 1;
-  }
-
-  await client.end();
-};
+export const fastifyPg: PostgresDb = (fastify as any).pg as PostgresDb;
