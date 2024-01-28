@@ -13,12 +13,18 @@ const registerRoutes = (instance: FastifyInstance) => {
 
         const { offset, limit } = request.query as { offset: number; limit: number };
 
+        // get owner user id from handle
+        const { rows } = await fastifyPg.query("SELECT * FROM users WHERE handle = $1", [handle]);
+        if (rows.length === 0) {
+          return reply.code(404).send();
+        }
+        const userId = rows[0].id;
+
         // query with offset and limit
-        const results = await fastifyPg.query("SELECT * FROM endorsements WHERE handle = $1 LIMIT $2 OFFSET $3", [
-          handle,
-          limit,
-          offset,
-        ]);
+        const results = await fastifyPg.query(
+          "SELECT * FROM endorsements where deleted_at is null and user_id = $1 LIMIT $2 OFFSET $3",
+          [userId, limit, offset]
+        );
 
         return {
           results,
@@ -38,29 +44,52 @@ const registerRoutes = (instance: FastifyInstance) => {
         }
 
         // delete
-        await fastifyPg.query("DELETE FROM endorsements WHERE id = $1", [endorsementId]);
+        await fastifyPg.query("update endorsements set deleted_at = now() WHERE id = $1", [endorsementId]);
 
         return {
-          id: endorsementId,
+          endorsementId,
           message: "Endorsement deleted",
         };
       });
 
-      api.post("/approve/:endorsementId", async (request, reply) => {
+      api.get("/pending", async (request, reply) => {
+        const user = await requireUser(request, reply);
+
+        // get pending endorsements
+        const { rows } = await fastifyPg.query(
+          "SELECT * FROM endorsements WHERE approved_at is null and deleted_at is null and user_id = $1",
+          [user.dbId]
+        );
+
+        return {
+          endorsements: rows,
+        };
+      });
+
+      api.post("/ack/:endorsementId", async (request, reply) => {
         const user = await requireUser(request, reply);
         const { endorsementId } = request.params as any;
+        const { action } = request.body as { action: string };
 
         const userId = user.dbId;
 
+        let column;
+        if (action === "reject") {
+          column = "deleted_at"; // TODO: add rejected_at column
+        } else if (action === "approve") {
+          column = "approved_at";
+        }
+
         // update
-        await fastifyPg.query("UPDATE endorsements SET approved_at = now() WHERE user_id = $1 and id = $2", [
+        await fastifyPg.query("UPDATE endorsements SET $column = now() WHERE user_id = $1 and id = $2", [
+          column,
           userId,
           endorsementId,
         ]);
 
         return {
-          id: endorsementId,
-          message: "Endorsement approved",
+          endorsementId,
+          action,
         };
       });
 
@@ -76,11 +105,13 @@ const registerRoutes = (instance: FastifyInstance) => {
         }
 
         // insert
-        await fastifyPg.query(
+        const result = await fastifyPg.query(
           "INSERT INTO endorsements (handle, user_id, endorser_id, message) VALUES ($1, $2, $3, $4)",
           [endorsement.handle, endorsement.name, endorsement.email, endorsement.message]
         );
-        endorsement.id = 1; // TODO: get id from insert
+        endorsement.id = result.rows[0].id;
+
+        // Send approval notice email
 
         return {
           endorsement,
