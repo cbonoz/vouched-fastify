@@ -10,6 +10,8 @@ import cors from "@fastify/cors";
 
 import { initDB } from "./db/migrate";
 
+const fastifyListRoutes = require("fastify-list-routes");
+
 const fastify = Fastify({ logger: true });
 
 const PORT: number = parseInt(process.env.PORT as string) || 3000;
@@ -18,6 +20,7 @@ const DATABASE_URL = process.env.DATABASE_URL as string;
 fastify.register(fastifyPg, {
   connectionString: DATABASE_URL,
 });
+fastify.register(fastifyListRoutes, { colors: true });
 
 /**
  * Register Clerk only for a subset of your routes
@@ -32,7 +35,7 @@ const protectedRoutes: FastifyPluginCallback = (instance, opts, done) => {
 };
 
 const publicRoutes: FastifyPluginCallback = (instance, opts, done) => {
-  instance.get("/", async (request, reply) => {
+  instance.get("/hello-world", async (request, reply) => {
     return {
       message: "This is a public endpoint. Request /user to test the auth middleware",
     };

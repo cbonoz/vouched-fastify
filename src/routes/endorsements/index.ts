@@ -29,12 +29,19 @@ const registerRoutes = (instance: FastifyInstance) => {
         const user = await requireUser(request, reply);
         const { endorsementId } = request.params as any;
 
-        const userId = user.id;
+        // Check that endorsement is owned by user
+        const { rows } = await fastifyPg.query("SELECT * FROM endorsements WHERE (endorser_id = $1 OR user_id = $1)", [
+          user.dbId,
+        ]);
+        if (rows.length === 0) {
+          return reply.code(403).send();
+        }
 
         // delete
-        await fastifyPg.query("DELETE FROM endorsements WHERE id = $1 and createdBy = $2", [endorsementId, userId]);
+        await fastifyPg.query("DELETE FROM endorsements WHERE id = $1", [endorsementId]);
 
         return {
+          id: endorsementId,
           message: "Endorsement deleted",
         };
       });
@@ -43,12 +50,16 @@ const registerRoutes = (instance: FastifyInstance) => {
         const user = await requireUser(request, reply);
         const { endorsementId } = request.params as any;
 
-        const userId = user.id;
+        const userId = user.dbId;
 
         // update
-        await fastifyPg.query("UPDATE endorsements SET approvedAt = $1 WHERE id = $2", [userId, endorsementId]);
+        await fastifyPg.query("UPDATE endorsements SET approved_at = now() WHERE user_id = $1 and id = $2", [
+          userId,
+          endorsementId,
+        ]);
 
         return {
+          id: endorsementId,
           message: "Endorsement approved",
         };
       });
@@ -58,10 +69,15 @@ const registerRoutes = (instance: FastifyInstance) => {
         const user = requireUser(request, reply);
         const { handle } = request.params as any;
 
-        // await fastifyPg.query("SELECT * FROM endorsements WHERE handle = $1", [handle]);
+        // Check that handle exists and is associated with a user
+        const { rows } = await fastifyPg.query("SELECT * FROM users WHERE handle = $1", [handle]);
+        if (rows.length === 0) {
+          return reply.code(403).send();
+        }
+
         // insert
         await fastifyPg.query(
-          "INSERT INTO endorsements (handle, createdBy, name, email, message) VALUES ($1, $2, $3, $4)",
+          "INSERT INTO endorsements (handle, user_id, endorser_id, message) VALUES ($1, $2, $3, $4)",
           [endorsement.handle, endorsement.name, endorsement.email, endorsement.message]
         );
         endorsement.id = 1; // TODO: get id from insert

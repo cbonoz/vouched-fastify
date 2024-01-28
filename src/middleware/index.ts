@@ -4,7 +4,11 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import { User } from "@clerk/backend/dist/types/api/resources/User";
 import { fastifyPg } from "../db";
 
-export const requireUser = async (request: FastifyRequest, reply: FastifyReply): Promise<User> => {
+export interface VouchedUser extends User {
+  dbId: number;
+}
+
+export const requireUser = async (request: FastifyRequest, reply: FastifyReply): Promise<VouchedUser> => {
   const { userId } = getAuth(request);
   if (!userId) {
     return reply.code(403).send();
@@ -12,7 +16,7 @@ export const requireUser = async (request: FastifyRequest, reply: FastifyReply):
 
   const user = await clerkClient.users.getUser(userId);
   // Get user id from db
-  const { rows } = await fastifyPg.query("SELECT * FROM users WHERE external_id = $1", [userId]);
+  let { rows } = await fastifyPg.query("SELECT * FROM users WHERE external_id = $1", [userId]);
   if (rows.length === 0) {
     // Create user
     const email = user.emailAddresses[0].emailAddress;
@@ -22,9 +26,9 @@ export const requireUser = async (request: FastifyRequest, reply: FastifyReply):
       user.firstName,
       user.lastName,
     ]);
-    // const { rows } = await fastifyPg.query("SELECT * FROM users WHERE external_id = $1", [userId]);
-    // user.id = rows[0].id;
+    const result = await fastifyPg.query("SELECT * FROM users WHERE external_id = $1", [userId]);
+    rows = result.rows;
   }
-
-  return user;
+  const dbUser = { ...user, dbId: rows[0].id };
+  return dbUser;
 };
