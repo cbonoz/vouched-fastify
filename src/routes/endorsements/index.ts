@@ -2,6 +2,7 @@ import fastify, { FastifyInstance } from "fastify";
 import { requireUser } from "../../middleware";
 import { Endorsement } from "../../types";
 import { fastifyPg } from "../../db";
+import { sendNewApprovalEmail } from '../../email';
 
 const registerRoutes = (instance: FastifyInstance) => {
   instance.register(
@@ -104,6 +105,8 @@ const registerRoutes = (instance: FastifyInstance) => {
           return reply.code(403).send();
         }
 
+        const handleUser = rows[0];
+
         // insert
         const result = await fastifyPg.query(
           "INSERT INTO endorsements (handle, user_id, endorser_id, message) VALUES ($1, $2, $3, $4)",
@@ -112,6 +115,8 @@ const registerRoutes = (instance: FastifyInstance) => {
         endorsement.id = result.rows[0].id;
 
         // Send approval notice email
+
+        sendNewApprovalEmail(handleUser.email, handle);
 
         return {
           endorsement,
