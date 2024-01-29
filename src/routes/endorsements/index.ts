@@ -11,24 +11,30 @@ const registerRoutes = (instance: FastifyInstance) => {
         const { handle } = request.params as any;
         // get offset and limit from query params
 
-        const { offset, limit } = request.query as { offset: number; limit: number };
+        const { offset, limit, includeUser } = request.query as { offset: number; limit: number; includeUser: boolean };
 
         // get owner user id from handle
         const { rows } = await instance.pg.query("SELECT * FROM users WHERE handle = $1", [handle]);
         if (rows.length === 0) {
           return reply.code(404).send();
         }
-        const userId = rows[0].id;
+        const handleUser = rows[0];
+        const handleUserId = handleUser.id;
 
         // query with offset and limit
         const results = await instance.pg.query(
           "SELECT * FROM endorsements where deleted_at is null and user_id = $1 LIMIT $2 OFFSET $3",
-          [userId, limit, offset]
+          [handleUserId, limit, offset]
         );
 
-        return {
-          results,
+        const response: any = {
+          endorsements: results.rows,
         };
+        if (includeUser) {
+          response.user = handleUser;
+        }
+
+        return response;
       });
 
       api.delete("/:endorsementId", async (request, reply) => {
@@ -96,7 +102,6 @@ const registerRoutes = (instance: FastifyInstance) => {
 
       api.post("", createRequestConfig(1), async (request, reply) => {
         const endorsement = request.body as Endorsement;
-        const user = requireUser(request, reply);
         const { handle } = request.params as any;
 
         // Check that handle exists and is associated with a user

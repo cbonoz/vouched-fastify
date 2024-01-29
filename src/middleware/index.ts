@@ -2,7 +2,7 @@ import { clerkClient, getAuth } from "@clerk/fastify";
 import { FastifyReply, FastifyRequest } from "fastify";
 // import from clerk
 import { User } from "@clerk/backend/dist/types/api/resources/User";
-import { getInstance } from "../server/instance";
+import { getInstance } from '../server/instance';
 
 export interface VouchedUser extends User {
   dbId: number;

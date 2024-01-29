@@ -1,5 +1,5 @@
 import { requireUser } from "../../middleware";
-import { getAuth } from "@clerk/fastify";
+import { clerkClient, getAuth } from "@clerk/fastify";
 import { sendAccessRequestEmailToAdmin } from "../../email";
 import { FastifyInstance } from "fastify";
 import { createRequestConfig } from "../../util";
@@ -12,18 +12,30 @@ const registerRoutes = (instance: FastifyInstance) => {
       });
 
       api.patch("/info", async (request, reply) => {
-        const user = requireUser(request, reply);
-        const { handle, name } = request.params as any;
+        const user = await requireUser(request, reply);
+        const { handle, firstName, lastName } = request.body as any;
+        if (!handle || !firstName || !lastName) {
+          const message = "handle, firstName, and lastName are required";
+          throw new Error(message);
+        }
 
-        await instance.pg.query("SELECT * FROM endorsements WHERE handle = $1", [handle]);
-
-        return {
-          message: "This is a public endpoint. Request /protected to test the Clerk auth middleware",
-        };
+        // Update user
+        await clerkClient.users.updateUser(user.id, {
+          firstName,
+          lastName,
+        });
+        await instance.pg.query("UPDATE users SET handle = $1, first_name = $2, last_name = $3 WHERE id = $3", [
+          handle,
+          firstName,
+          lastName,
+          user.dbId,
+        ]);
+        const res = await requireUser(request, reply);
+        return res;
       });
 
       // request invite
-      api.post("/request-invite", createRequestConfig(10), async (request, reply) => {
+      api.post("/request-invite", createRequestConfig(1), async (request, reply) => {
         const { email, name } = request.body as any;
 
         // check if user exists
