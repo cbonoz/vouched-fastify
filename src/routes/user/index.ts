@@ -2,7 +2,7 @@ import { requireUser } from "../../middleware";
 import { getAuth } from "@clerk/fastify";
 import { sendAccessRequestEmailToAdmin } from "../../email";
 import { FastifyInstance } from "fastify";
-import { createRequestConfig } from '../../util';
+import { createRequestConfig } from "../../util";
 
 const registerRoutes = (instance: FastifyInstance) => {
   instance.register(
@@ -23,7 +23,7 @@ const registerRoutes = (instance: FastifyInstance) => {
       });
 
       // request invite
-      api.post("/request-invite", createRequestConfig(1), async (request, reply) => {
+      api.post("/request-invite", createRequestConfig(10), async (request, reply) => {
         const { email, name } = request.body as any;
 
         // check if user exists
@@ -34,11 +34,17 @@ const registerRoutes = (instance: FastifyInstance) => {
 
         // split name
         const names = name.split(" ");
-        const firstName = names[0];
-        const lastName = names[1];
+        const firstName = names[0].trim();
+        // take rest
+        const lastName = names.slice(1).join(" ").trim();
+
+        if (!firstName || !lastName) {
+          const message = "Separate first and last name with at least one space";
+          throw new Error(message);
+        }
 
         // insert user
-        await instance.pg.query("INSERT INTO users (email, first_name, last_name) VALUES ($1, $2)", [
+        await instance.pg.query("INSERT INTO users (email, first_name, last_name) VALUES ($1, $2, $3)", [
           email,
           firstName,
           lastName,
@@ -46,6 +52,8 @@ const registerRoutes = (instance: FastifyInstance) => {
 
         // send email
         await sendAccessRequestEmailToAdmin(email, name);
+
+        reply.code(201).send();
       });
 
       done();

@@ -12,7 +12,9 @@ import { setInstance } from "./server/instance";
 
 const fastifyListRoutes = require("fastify-list-routes");
 
-const fastify = Fastify({ logger: true });
+const fastify = Fastify({
+  logger: { level: "info" },
+});
 
 const PORT: number = parseInt(process.env.PORT as string) || 3000;
 const DATABASE_URL = process.env.DATABASE_URL as string;
@@ -64,13 +66,16 @@ const start = async () => {
     await fastify.listen({ port: PORT });
     // console.log(`Server listening on port ${PORT}`);
   } catch (err) {
-    fastify.log.error(err);
+    // fastify.log.error(err);
     process.exit(1);
   }
 };
 
 // Add global exception handler to return a 400 error if an error is thrown
 fastify.setErrorHandler((error: any, request: any, reply: any) => {
+  // Log error
+  // const errorMessage = `\n${error.message}\n${error.stack}\n`;
+  fastify.log.error(error.stack);
   if (error.statusCode === 429) {
     reply.code(429);
     error.message = "You hit the rate limit! Slow down please!";
