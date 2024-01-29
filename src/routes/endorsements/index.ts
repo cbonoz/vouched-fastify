@@ -1,28 +1,26 @@
-import fastify, { FastifyInstance } from "fastify";
 import { requireUser } from "../../middleware";
 import { Endorsement } from "../../types";
-import { fastifyPg } from "../../db";
-import { sendNewApprovalEmail } from '../../email';
+import { sendNewApprovalEmail } from "../../email";
+import { FastifyInstance } from "fastify";
 
 const registerRoutes = (instance: FastifyInstance) => {
   instance.register(
     (api, opts, done) => {
       api.get("/:handle", async (request, reply) => {
-        const user = requireUser(request, reply);
         const { handle } = request.params as any;
         // get offset and limit from query params
 
         const { offset, limit } = request.query as { offset: number; limit: number };
 
         // get owner user id from handle
-        const { rows } = await fastifyPg.query("SELECT * FROM users WHERE handle = $1", [handle]);
+        const { rows } = await instance.pg.query("SELECT * FROM users WHERE handle = $1", [handle]);
         if (rows.length === 0) {
           return reply.code(404).send();
         }
         const userId = rows[0].id;
 
         // query with offset and limit
-        const results = await fastifyPg.query(
+        const results = await instance.pg.query(
           "SELECT * FROM endorsements where deleted_at is null and user_id = $1 LIMIT $2 OFFSET $3",
           [userId, limit, offset]
         );
@@ -37,15 +35,16 @@ const registerRoutes = (instance: FastifyInstance) => {
         const { endorsementId } = request.params as any;
 
         // Check that endorsement is owned by user
-        const { rows } = await fastifyPg.query("SELECT * FROM endorsements WHERE (endorser_id = $1 OR user_id = $1)", [
-          user.dbId,
-        ]);
+        const { rows } = await instance.pg.query(
+          "SELECT * FROM endorsements WHERE (endorser_id = $1 OR user_id = $1)",
+          [user.dbId]
+        );
         if (rows.length === 0) {
           return reply.code(403).send();
         }
 
         // delete
-        await fastifyPg.query("update endorsements set deleted_at = now() WHERE id = $1", [endorsementId]);
+        await instance.pg.query("update endorsements set deleted_at = now() WHERE id = $1", [endorsementId]);
 
         return {
           endorsementId,
@@ -57,7 +56,7 @@ const registerRoutes = (instance: FastifyInstance) => {
         const user = await requireUser(request, reply);
 
         // get pending endorsements
-        const { rows } = await fastifyPg.query(
+        const { rows } = await instance.pg.query(
           "SELECT * FROM endorsements WHERE approved_at is null and deleted_at is null and user_id = $1",
           [user.dbId]
         );
@@ -82,7 +81,7 @@ const registerRoutes = (instance: FastifyInstance) => {
         }
 
         // update
-        await fastifyPg.query("UPDATE endorsements SET $column = now() WHERE user_id = $1 and id = $2", [
+        await instance.pg.query("UPDATE endorsements SET $column = now() WHERE user_id = $1 and id = $2", [
           column,
           userId,
           endorsementId,
@@ -100,7 +99,7 @@ const registerRoutes = (instance: FastifyInstance) => {
         const { handle } = request.params as any;
 
         // Check that handle exists and is associated with a user
-        const { rows } = await fastifyPg.query("SELECT * FROM users WHERE handle = $1", [handle]);
+        const { rows } = await instance.pg.query("SELECT * FROM users WHERE handle = $1", [handle]);
         if (rows.length === 0) {
           return reply.code(403).send();
         }
@@ -108,7 +107,7 @@ const registerRoutes = (instance: FastifyInstance) => {
         const handleUser = rows[0];
 
         // insert
-        const result = await fastifyPg.query(
+        const result = await instance.pg.query(
           "INSERT INTO endorsements (handle, user_id, endorser_id, message) VALUES ($1, $2, $3, $4)",
           [endorsement.handle, endorsement.name, endorsement.email, endorsement.message]
         );

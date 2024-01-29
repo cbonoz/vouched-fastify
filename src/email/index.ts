@@ -29,6 +29,12 @@ export const sendNewApprovalEmail = async (toEmail: string, handle: string) => {
   return sendEmail(toEmail, subject, body);
 };
 
+export const sendAccessRequestEmailToAdmin = async (email: string, name: string) => {
+  const subject = "New access request";
+  const body = `Hi there, ${name} (${email}) has requested access to Vouched.`;
+  return sendEmail(email, subject, body);
+};
+
 export const sendWelcomeEmail = async (toEmail: string, handle: string) => {
   const subject = "Welcome to Vouched";
   const body = `Hi there, welcome to Vouched. You can use vouched to endorse your colleagues or approve or reject endorsements that have been left for you. <p>Use vouched as your own personal reference checker.</p>`;
