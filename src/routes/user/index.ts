@@ -2,6 +2,7 @@ import { requireUser } from "../../middleware";
 import { getAuth } from "@clerk/fastify";
 import { sendAccessRequestEmailToAdmin } from "../../email";
 import { FastifyInstance } from "fastify";
+import { createRequestConfig } from '../../util';
 
 const registerRoutes = (instance: FastifyInstance) => {
   instance.register(
@@ -22,7 +23,7 @@ const registerRoutes = (instance: FastifyInstance) => {
       });
 
       // request invite
-      api.post("/request-invite", async (request, reply) => {
+      api.post("/request-invite", createRequestConfig(1), async (request, reply) => {
         const { email, name } = request.body as any;
 
         // check if user exists

@@ -8,7 +8,7 @@ import endorsements from "./routes/endorsements";
 import cors from "@fastify/cors";
 
 import { initDB } from "./db/migrate";
-import { setInstance } from './server/instance';
+import { setInstance } from "./server/instance";
 
 const fastifyListRoutes = require("fastify-list-routes");
 
@@ -50,8 +50,9 @@ const start = async () => {
       // put your options here
       origin: "*",
     });
+
     await fastify.register(import("@fastify/rate-limit"), {
-      max: 1,
+      max: 60,
       timeWindow: "1 minute",
     });
     /**
@@ -59,7 +60,7 @@ const start = async () => {
      */
     fastify.register(protectedRoutes);
     fastify.register(publicRoutes);
-    setInstance(fastify)
+    setInstance(fastify);
     await fastify.listen({ port: PORT });
     // console.log(`Server listening on port ${PORT}`);
   } catch (err) {
@@ -70,16 +71,13 @@ const start = async () => {
 
 // Add global exception handler to return a 400 error if an error is thrown
 fastify.setErrorHandler((error: any, request: any, reply: any) => {
-  // check 409
-  // log
-  console.log(error);
-  // if (error.statusCode === 429) {
-  //   reply.code(429);
-  //   error.message = "You hit the rate limit! Slow down please!";
-  // } else {
-  //   reply.code(400);
-  // }
-  reply.code(error.statusCode || 400).send({ error: error.message });
+  if (error.statusCode === 429) {
+    reply.code(429);
+    error.message = "You hit the rate limit! Slow down please!";
+  } else {
+    reply.code(400);
+  }
+  reply.send({ error: error.message });
 });
 
 start();

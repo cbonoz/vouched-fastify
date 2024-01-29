@@ -2,6 +2,7 @@ import { requireUser } from "../../middleware";
 import { Endorsement } from "../../types";
 import { sendNewApprovalEmail } from "../../email";
 import { FastifyInstance } from "fastify";
+import { createRequestConfig } from "../../util";
 
 const registerRoutes = (instance: FastifyInstance) => {
   instance.register(
@@ -93,7 +94,7 @@ const registerRoutes = (instance: FastifyInstance) => {
         };
       });
 
-      api.post("", async (request, reply) => {
+      api.post("", createRequestConfig(1), async (request, reply) => {
         const endorsement = request.body as Endorsement;
         const user = requireUser(request, reply);
         const { handle } = request.params as any;
