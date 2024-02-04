@@ -13,23 +13,25 @@ const registerRoutes = (instance: FastifyInstance) => {
 
       api.patch("/info", async (request, reply) => {
         const user = await requireUser(request, reply);
-        const { handle, firstName, lastName } = request.body as any;
+        const { handle, firstName, lastName, active } = request.body as any;
         if (!handle || !firstName || !lastName) {
           const message = "handle, firstName, and lastName are required";
           throw new Error(message);
         }
 
-        // Update user
-        await clerkClient.users.updateUser(user.id, {
-          firstName,
-          lastName,
-        });
         await instance.pg.query("UPDATE users SET handle = $1, first_name = $2, last_name = $3 WHERE id = $3", [
           handle,
           firstName,
           lastName,
           user.dbId,
         ]);
+
+        // Update user
+        await clerkClient.users.updateUser(user.id, {
+          firstName,
+          lastName,
+        });
+
         const res = await requireUser(request, reply);
         return res;
       });

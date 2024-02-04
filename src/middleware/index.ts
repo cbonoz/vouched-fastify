@@ -2,7 +2,8 @@ import { clerkClient, getAuth } from "@clerk/fastify";
 import { FastifyReply, FastifyRequest } from "fastify";
 // import from clerk
 import { User } from "@clerk/backend/dist/types/api/resources/User";
-import { getInstance } from '../server/instance';
+import { getInstance } from "../server/instance";
+import { isEmpty } from "../util";
 
 export interface VouchedUser extends User {
   dbId: number;
@@ -18,7 +19,7 @@ export const requireUser = async (request: FastifyRequest, reply: FastifyReply):
   // Get user id from db
   const instance = getInstance();
   let { rows } = await instance.pg.query("SELECT * FROM users WHERE external_id = $1", [userId]);
-  if (rows.length === 0) {
+  if (isEmpty(rows)) {
     // Create user
     const email = user.emailAddresses[0].emailAddress;
     await instance.pg.query("INSERT INTO users (external_id, email, first_name, last_name) VALUES ($1, $2, $3, $4)", [
